@@ -16,3 +16,11 @@ export interface PageSectionContent {
   content?: string;
   imageUrl?: string;
 }
+
+export interface FooterContent {
+  youtube?: string;
+  twitter?: string;
+  instagram?: string;
+  description?: string;
+  copyright?: string;
+}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import type { FooterContent } from '@/lib/types';
 import AnimatedLogo from '../animated-logo';
 import { YouTubeIcon, TwitterIcon, InstagramIcon } from "@/components/icons";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,45 +14,47 @@ const navLinks = [
   { href: '#contacto', label: 'Contacto' },
 ];
 
-interface SocialLinksData {
-    youtube: string;
-    twitter: string;
-    instagram: string;
-}
-
 export default function PublicFooter() {
-  const [socialLinks, setSocialLinks] = useState<SocialLinksData | null>(null);
+  const [footerContent, setFooterContent] = useState<FooterContent | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const defaultContent: FooterContent = {
+      youtube: '#',
+      twitter: '#',
+      instagram: '#',
+      description: 'Deconstruyendo el Séptimo Arte. Un espacio para explorar el lenguaje del cine, analizar las obras de grandes maestros y entender por qué ciertas películas nos marcan para siempre.',
+      copyright: 'Cine Digital. Todos los derechos reservados.',
+  };
+
   useEffect(() => {
-    async function fetchSocials() {
+    async function fetchContent() {
         if (!db) {
-            setSocialLinks({ youtube: '#', twitter: '#', instagram: '#' });
+            setFooterContent(defaultContent);
             setLoading(false);
             return;
         }
         try {
-            const docRef = doc(db, 'pageContent', 'socials');
+            const docRef = doc(db, 'pageContent', 'footer');
             const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                setSocialLinks(docSnap.data() as SocialLinksData);
+            if (docSnap.exists() && docSnap.data().description) {
+                setFooterContent(docSnap.data() as FooterContent);
             } else {
-                setSocialLinks({ youtube: '#', twitter: '#', instagram: '#' });
+                setFooterContent(defaultContent);
             }
         } catch (error) {
-            console.error("Error fetching social links:", error);
-            setSocialLinks({ youtube: '#', twitter: '#', instagram: '#' });
+            console.error("Error fetching footer content:", error);
+            setFooterContent(defaultContent);
         } finally {
             setLoading(false);
         }
     }
-    fetchSocials();
+    fetchContent();
   }, []);
 
   const socialLinksConfig = [
-    { href: socialLinks?.youtube, icon: YouTubeIcon, label: "YouTube" },
-    { href: socialLinks?.twitter, icon: TwitterIcon, label: "Twitter" },
-    { href: socialLinks?.instagram, icon: InstagramIcon, label: "Instagram" },
+    { href: footerContent?.youtube, icon: YouTubeIcon, label: "YouTube" },
+    { href: footerContent?.twitter, icon: TwitterIcon, label: "Twitter" },
+    { href: footerContent?.instagram, icon: InstagramIcon, label: "Instagram" },
   ];
 
   return (
@@ -63,9 +66,17 @@ export default function PublicFooter() {
              <div className="w-48 -ml-4">
                 <AnimatedLogo />
              </div>
-             <p className="text-gray-400 text-sm max-w-md">
-                Deconstruyendo el Séptimo Arte. Un espacio para explorar el lenguaje del cine, analizar las obras de grandes maestros y entender por qué ciertas películas nos marcan para siempre.
-             </p>
+             {loading ? (
+                <div className='space-y-2'>
+                    <Skeleton className='h-4 w-full' />
+                    <Skeleton className='h-4 w-full' />
+                    <Skeleton className='h-4 w-4/5' />
+                </div>
+             ) : (
+                <p className="text-gray-400 text-sm max-w-md">
+                    {footerContent?.description}
+                </p>
+             )}
           </div>
           
           <div className="md:col-span-3 lg:col-span-3 space-y-4">
@@ -109,7 +120,11 @@ export default function PublicFooter() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border/50 text-center text-gray-500 text-sm">
-            <p>&copy; {new Date().getFullYear()} Cine Digital. Todos los derechos reservados.</p>
+             {loading ? (
+                <Skeleton className="h-4 w-1/2 mx-auto" />
+             ) : (
+                <p>&copy; {new Date().getFullYear()} {footerContent?.copyright}</p>
+             )}
         </div>
       </div>
     </footer>

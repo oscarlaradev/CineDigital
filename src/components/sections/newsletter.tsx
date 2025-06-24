@@ -3,37 +3,32 @@
 import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import type { FooterContent } from '@/lib/types';
 import { YouTubeIcon, TwitterIcon, InstagramIcon } from "@/components/icons";
 import { Skeleton } from '@/components/ui/skeleton';
 
-interface SocialLinksData {
-    youtube: string;
-    twitter: string;
-    instagram: string;
-}
-
 export default function NewsletterSection() {
-  const [socialLinks, setSocialLinks] = useState<SocialLinksData | null>(null);
+  const [footerContent, setFooterContent] = useState<FooterContent | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchSocials() {
         if (!db) {
-            setSocialLinks({ youtube: '#', twitter: '#', instagram: '#' });
+            setFooterContent({ youtube: '#', twitter: '#', instagram: '#' });
             setLoading(false);
             return;
         }
         try {
-            const docRef = doc(db, 'pageContent', 'socials');
+            const docRef = doc(db, 'pageContent', 'footer');
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
-                setSocialLinks(docSnap.data() as SocialLinksData);
+                setFooterContent(docSnap.data() as FooterContent);
             } else {
-                 setSocialLinks({ youtube: '#', twitter: '#', instagram: '#' });
+                 setFooterContent({ youtube: '#', twitter: '#', instagram: '#' });
             }
         } catch (error) {
             console.error("Error fetching social links:", error);
-            setSocialLinks({ youtube: '#', twitter: '#', instagram: '#' });
+            setFooterContent({ youtube: '#', twitter: '#', instagram: '#' });
         } finally {
             setLoading(false);
         }
@@ -42,9 +37,9 @@ export default function NewsletterSection() {
   }, []);
 
   const socialLinksConfig = [
-    { href: socialLinks?.youtube, icon: YouTubeIcon, label: "YouTube" },
-    { href: socialLinks?.twitter, icon: TwitterIcon, label: "Twitter" },
-    { href: socialLinks?.instagram, icon: InstagramIcon, label: "Instagram" },
+    { href: footerContent?.youtube, icon: YouTubeIcon, label: "YouTube" },
+    { href: footerContent?.twitter, icon: TwitterIcon, label: "Twitter" },
+    { href: footerContent?.instagram, icon: InstagramIcon, label: "Instagram" },
   ];
 
   return (

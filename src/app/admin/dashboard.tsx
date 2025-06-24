@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, getDoc, query, orderBy, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
-import type { Post, PageSectionContent } from '@/lib/types';
+import type { Post, PageSectionContent, FooterContent } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,12 +30,6 @@ interface PostFormData {
   summary: string;
 }
 
-interface SocialLinks {
-    youtube: string;
-    twitter: string;
-    instagram: string;
-}
-
 const initialPostFormState: PostFormData = {
   title: '',
   category: 'analisis',
@@ -51,10 +45,12 @@ const initialPageContentState: PageSectionContent = {
     imageUrl: '',
 }
 
-const initialSocialLinksState: SocialLinks = {
-    youtube: '#',
-    twitter: '#',
-    instagram: '#'
+const initialFooterContentState: FooterContent = {
+    youtube: '',
+    twitter: '',
+    instagram: '',
+    description: '',
+    copyright: '',
 }
 
 export default function Dashboard() {
@@ -65,7 +61,7 @@ export default function Dashboard() {
   
   const [heroContent, setHeroContent] = useState<PageSectionContent>(initialPageContentState);
   const [aboutContent, setAboutContent] = useState<PageSectionContent>(initialPageContentState);
-  const [socialLinks, setSocialLinks] = useState<SocialLinks>(initialSocialLinksState);
+  const [footerContent, setFooterContent] = useState<FooterContent>(initialFooterContentState);
 
 
   const { toast } = useToast();
@@ -89,7 +85,7 @@ export default function Dashboard() {
     }
     fetchPageContent('hero', setHeroContent);
     fetchPageContent('about', setAboutContent);
-    fetchPageContent('socials', setSocialLinks);
+    fetchPageContent('footer', setFooterContent);
 
     return () => unsubscribePosts();
   }, []);
@@ -113,9 +109,9 @@ export default function Dashboard() {
     setAboutContent(prev => ({ ...prev, [id]: value }));
   }
 
-  const handleSocialLinksChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFooterContentChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const { id, value } = e.target;
-      setSocialLinks(prev => ({...prev, [id]: value}));
+      setFooterContent(prev => ({...prev, [id]: value}));
   }
 
   const handlePageContentSave = async (sectionId: string, data: any) => {
@@ -241,21 +237,29 @@ export default function Dashboard() {
                     <Button type="submit">Guardar Sección Sobre Mí</Button>
                 </form>
 
-                <form onSubmit={(e) => { e.preventDefault(); handlePageContentSave('socials', socialLinks); }} className="space-y-4 p-4 border rounded-md">
-                    <h3 className="font-semibold text-lg">Enlaces de Redes Sociales</h3>
+                <form onSubmit={(e) => { e.preventDefault(); handlePageContentSave('footer', footerContent); }} className="space-y-4 p-4 border rounded-md">
+                    <h3 className="font-semibold text-lg">Gestionar Pie de Página</h3>
+                    <div className="space-y-2">
+                        <Label htmlFor="description">Descripción del Pie de Página</Label>
+                        <Textarea id="description" value={footerContent.description} onChange={handleFooterContentChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="copyright">Texto de Copyright (sin año ni ©)</Label>
+                        <Input id="copyright" value={footerContent.copyright} onChange={handleFooterContentChange} />
+                    </div>
                     <div className="space-y-2">
                         <Label htmlFor="youtube">URL de YouTube</Label>
-                        <Input id="youtube" type="url" value={socialLinks.youtube} onChange={handleSocialLinksChange} />
+                        <Input id="youtube" type="url" value={footerContent.youtube} onChange={handleFooterContentChange} />
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="twitter">URL de Twitter/X</Label>
-                        <Input id="twitter" type="url" value={socialLinks.twitter} onChange={handleSocialLinksChange} />
+                        <Input id="twitter" type="url" value={footerContent.twitter} onChange={handleFooterContentChange} />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="instagram">URL de Instagram</Label>
-                        <Input id="instagram" type="url" value={socialLinks.instagram} onChange={handleSocialLinksChange} />
+                        <Input id="instagram" type="url" value={footerContent.instagram} onChange={handleFooterContentChange} />
                     </div>
-                    <Button type="submit">Guardar Enlaces de Redes</Button>
+                    <Button type="submit">Guardar Pie de Página</Button>
                 </form>
             </CardContent>
           </Card>
