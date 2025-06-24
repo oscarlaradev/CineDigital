@@ -27,6 +27,11 @@ export default function AnalysisSection() {
 
   useEffect(() => {
     async function fetchPosts() {
+      if (!db) {
+        setError('No se pudieron cargar las publicaciones: Firebase no está configurado.');
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
         setError(null);
