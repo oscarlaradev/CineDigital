@@ -25,7 +25,7 @@ export default function PublicHeader() {
           key={link.href}
           href={link.href}
           onClick={handleLinkClick}
-          className="text-gray-300 hover:text-white transition-colors"
+          className="nav-link-animated text-gray-300 hover:text-white transition-colors"
         >
           {link.label}
         </a>

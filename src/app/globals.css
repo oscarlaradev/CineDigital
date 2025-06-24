@@ -118,3 +118,25 @@
     stroke-dashoffset: -50;
   }
 }
+
+.nav-link-animated {
+  position: relative;
+  padding-bottom: 6px;
+  text-decoration: none;
+}
+
+.nav-link-animated::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background-color: hsl(var(--accent));
+  transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.nav-link-animated:hover::after {
+  width: 100%;
+}
