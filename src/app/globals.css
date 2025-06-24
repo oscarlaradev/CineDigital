@@ -94,20 +94,27 @@
   height: 100%;
 }
 
-.animated-logo-text {
+.animated-logo-text-base {
   font-family: 'Playfair Display', serif;
   font-weight: 700;
   font-size: 80px;
   fill: hsl(var(--primary));
-  animation: logo-glow 4s ease-in-out infinite alternate;
+  stroke: none;
 }
 
+.animated-logo-text-highlight {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 80px;
+  fill: none;
+  stroke: hsl(var(--accent));
+  stroke-width: 2.5px;
+  stroke-dasharray: 15 35;
+  animation: move-stroke 3s linear infinite;
+}
 
-@keyframes logo-glow {
-  from {
-    text-shadow: 0 0 5px hsl(var(--accent) / 0.5), 0 0 10px hsl(var(--accent) / 0.5);
-  }
+@keyframes move-stroke {
   to {
-    text-shadow: 0 0 10px hsl(var(--accent) / 0.8), 0 0 20px hsl(var(--accent) / 0.8);
+    stroke-dashoffset: -50;
   }
 }
