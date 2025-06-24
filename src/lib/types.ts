@@ -8,3 +8,11 @@ export interface Post {
   category: 'analisis' | 'directores' | 'generos';
   createdAt: Timestamp;
 }
+
+export interface PageSectionContent {
+  id: string;
+  title?: string;
+  subtitle?: string;
+  content?: string;
+  imageUrl?: string;
+}

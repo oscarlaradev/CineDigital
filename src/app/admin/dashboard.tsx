@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
-import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, getDoc, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, getDoc, query, orderBy, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
-import type { Post } from '@/lib/types';
+import type { Post, PageSectionContent } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Label } from '@/components/ui/label';
 
 interface PostFormData {
   title: string;
@@ -29,77 +30,125 @@ interface PostFormData {
   summary: string;
 }
 
-const initialFormState: PostFormData = {
+const initialPostFormState: PostFormData = {
   title: '',
   category: 'analisis',
   imageUrl: '',
   summary: '',
 };
 
+const initialPageContentState: PageSectionContent = {
+    id: '',
+    title: '',
+    subtitle: '',
+    content: '',
+    imageUrl: '',
+}
+
 export default function Dashboard() {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [formData, setFormData] = useState<PostFormData>(initialFormState);
+  const [postFormData, setPostFormData] = useState<PostFormData>(initialPostFormState);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
+  
+  const [heroContent, setHeroContent] = useState<PageSectionContent>(initialPageContentState);
+  const [aboutContent, setAboutContent] = useState<PageSectionContent>(initialPageContentState);
+
   const { toast } = useToast();
 
   useEffect(() => {
     if (!db) return;
+    
+    // Posts listener
     const postsCollection = collection(db, 'posts');
     const q = query(postsCollection, orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribePosts = onSnapshot(q, (snapshot) => {
       const postsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Post));
       setPosts(postsData);
     });
-    return () => unsubscribe();
+
+    // Page content listeners
+    const fetchPageContent = async (sectionId: string, setter: React.Dispatch<React.SetStateAction<PageSectionContent>>) => {
+        const docRef = doc(db, 'pageContent', sectionId);
+        const docSnap = await getDoc(docRef);
+        if(docSnap.exists()) {
+            setter(docSnap.data() as PageSectionContent);
+        }
+    }
+    fetchPageContent('hero', setHeroContent);
+    fetchPageContent('about', setAboutContent);
+
+    return () => unsubscribePosts();
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handlePostInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
-    setFormData(prev => ({ ...prev, [id]: value }));
+    setPostFormData(prev => ({ ...prev, [id]: value }));
   };
   
   const handleCategoryChange = (value: 'analisis' | 'directores' | 'generos') => {
-      setFormData(prev => ({ ...prev, category: value }));
+      setPostFormData(prev => ({ ...prev, category: value }));
   };
 
-  const resetForm = () => {
-    setFormData(initialFormState);
+  const handleHeroContentChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setHeroContent(prev => ({ ...prev, [id]: value }));
+  }
+
+  const handleAboutContentChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setAboutContent(prev => ({ ...prev, [id]: value }));
+  }
+
+  const handlePageContentSave = async (sectionId: string, data: PageSectionContent) => {
+    if (!db) return;
+    try {
+        const docRef = doc(db, 'pageContent', sectionId);
+        await setDoc(docRef, data, { merge: true });
+        toast({ title: 'Éxito', description: `Sección '${sectionId}' actualizada.` });
+    } catch(error) {
+        console.error("Error saving page content:", error);
+        toast({ title: "Error", description: `Error al guardar la sección '${sectionId}'.`, variant: "destructive" });
+    }
+  }
+
+  const resetPostForm = () => {
+    setPostFormData(initialPostFormState);
     setEditingPostId(null);
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
+  const handlePostFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.category || !formData.imageUrl || !formData.summary) {
-        toast({ title: "Error", description: "Todos los campos son obligatorios.", variant: "destructive" });
+    if (!postFormData.title || !postFormData.category || !postFormData.imageUrl || !postFormData.summary) {
+        toast({ title: "Error", description: "Todos los campos de la publicación son obligatorios.", variant: "destructive" });
         return;
     }
 
     try {
       if (editingPostId) {
         const postRef = doc(db, 'posts', editingPostId);
-        await updateDoc(postRef, formData);
+        await updateDoc(postRef, postFormData);
         toast({ title: "Éxito", description: "Publicación actualizada correctamente." });
       } else {
         await addDoc(collection(db, 'posts'), {
-          ...formData,
+          ...postFormData,
           createdAt: serverTimestamp(),
         });
         toast({ title: "Éxito", description: "Publicación creada correctamente." });
       }
-      resetForm();
+      resetPostForm();
     } catch (error) {
       console.error("Error saving post:", error);
       toast({ title: "Error", description: "Hubo un error al guardar la publicación.", variant: "destructive" });
     }
   };
 
-  const handleEdit = async (id: string) => {
+  const handleEditPost = async (id: string) => {
     const postRef = doc(db, 'posts', id);
     const postSnap = await getDoc(postRef);
     if (postSnap.exists()) {
       const postData = postSnap.data() as Omit<Post, 'id' | 'createdAt'>;
-      setFormData({
+      setPostFormData({
           title: postData.title,
           category: postData.category,
           imageUrl: postData.imageUrl,
@@ -110,7 +159,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeletePost = async (id: string) => {
     try {
       await deleteDoc(doc(db, 'posts', id));
       toast({ title: "Éxito", description: "Publicación eliminada." });
@@ -122,7 +171,7 @@ export default function Dashboard() {
 
   const confirmDelete = async () => {
     if (postToDelete) {
-        await handleDelete(postToDelete);
+        await handleDeletePost(postToDelete);
         setPostToDelete(null);
     }
   }
@@ -137,22 +186,62 @@ export default function Dashboard() {
           </nav>
         </header>
 
-        <main className="container mx-auto p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Gestionar Publicaciones</h2>
+        <main className="container mx-auto p-6 space-y-8">
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestionar Contenido de la Página</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                {/* Hero Section Form */}
+                <form onSubmit={(e) => { e.preventDefault(); handlePageContentSave('hero', heroContent); }} className="space-y-4 p-4 border rounded-md">
+                    <h3 className="font-semibold text-lg">Sección Hero</h3>
+                    <div className="space-y-2">
+                        <Label htmlFor="title">Título Principal</Label>
+                        <Input id="title" value={heroContent.title} onChange={handleHeroContentChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="subtitle">Subtítulo / Párrafo</Label>
+                        <Textarea id="subtitle" rows={4} value={heroContent.subtitle} onChange={handleHeroContentChange} />
+                    </div>
+                    <Button type="submit">Guardar Sección Hero</Button>
+                </form>
 
-          <Card className="mb-8">
+                {/* About Section Form */}
+                <form onSubmit={(e) => { e.preventDefault(); handlePageContentSave('about', aboutContent); }} className="space-y-4 p-4 border rounded-md">
+                    <h3 className="font-semibold text-lg">Sección Sobre Mí</h3>
+                    <div className="space-y-2">
+                        <Label htmlFor="title">Título</Label>
+                        <Input id="title" value={aboutContent.title} onChange={handleAboutContentChange} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="imageUrl">URL de la Imagen</Label>
+                        <Input id="imageUrl" type="url" value={aboutContent.imageUrl} onChange={handleAboutContentChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="content">Contenido (puedes usar párrafos separados por una línea en blanco)</Label>
+                        <Textarea id="content" rows={6} value={aboutContent.content} onChange={handleAboutContentChange} />
+                    </div>
+                    <Button type="submit">Guardar Sección Sobre Mí</Button>
+                </form>
+            </CardContent>
+          </Card>
+          
+          <h2 className="text-2xl font-bold text-gray-800">Gestionar Publicaciones</h2>
+
+          <Card>
               <CardHeader>
                   <CardTitle>{editingPostId ? 'Editando Publicación' : 'Añadir Nueva Publicación'}</CardTitle>
               </CardHeader>
               <CardContent>
-                  <form onSubmit={handleFormSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <form onSubmit={handlePostFormSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="md:col-span-2 space-y-2">
-                          <label htmlFor="title">Título</label>
-                          <Input id="title" value={formData.title} onChange={handleInputChange} required />
+                          <Label htmlFor="title">Título</Label>
+                          <Input id="title" value={postFormData.title} onChange={handlePostInputChange} required />
                       </div>
                       <div className="space-y-2">
-                          <label htmlFor="category">Categoría</label>
-                           <Select value={formData.category} onValueChange={handleCategoryChange}>
+                          <Label htmlFor="category">Categoría</Label>
+                           <Select value={postFormData.category} onValueChange={handleCategoryChange}>
                               <SelectTrigger id="category">
                                   <SelectValue placeholder="Selecciona una categoría" />
                               </SelectTrigger>
@@ -164,17 +253,17 @@ export default function Dashboard() {
                           </Select>
                       </div>
                       <div className="space-y-2">
-                          <label htmlFor="imageUrl">URL de la Imagen</label>
-                          <Input id="imageUrl" type="url" value={formData.imageUrl} onChange={handleInputChange} required />
+                          <Label htmlFor="imageUrl">URL de la Imagen</Label>
+                          <Input id="imageUrl" type="url" value={postFormData.imageUrl} onChange={handlePostInputChange} required />
                       </div>
                       <div className="md:col-span-2 space-y-2">
-                          <label htmlFor="summary">Resumen</label>
-                          <Textarea id="summary" rows={4} value={formData.summary} onChange={handleInputChange} required />
+                          <Label htmlFor="summary">Resumen</Label>
+                          <Textarea id="summary" rows={4} value={postFormData.summary} onChange={handlePostInputChange} required />
                       </div>
                       <div className="md:col-span-2 flex items-center gap-4">
                           <Button type="submit">{editingPostId ? 'Guardar Cambios' : 'Guardar Publicación'}</Button>
                           {editingPostId && (
-                              <Button type="button" variant="outline" onClick={resetForm}>Cancelar Edición</Button>
+                              <Button type="button" variant="outline" onClick={resetPostForm}>Cancelar Edición</Button>
                           )}
                       </div>
                   </form>
@@ -194,7 +283,7 @@ export default function Dashboard() {
                                   <p className="text-sm text-gray-500 capitalize">{post.category}</p>
                               </div>
                               <div className="flex gap-2">
-                                  <Button size="sm" variant="outline" onClick={() => handleEdit(post.id)}>Editar</Button>
+                                  <Button size="sm" variant="outline" onClick={() => handleEditPost(post.id)}>Editar</Button>
                                   <Button size="sm" variant="destructive" onClick={() => setPostToDelete(post.id)}>Eliminar</Button>
                               </div>
                           </div>
