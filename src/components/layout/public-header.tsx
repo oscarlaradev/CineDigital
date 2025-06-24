@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import AnimatedLogo from '../animated-logo';
 
 const navLinks = [
   { href: '#analisis', label: 'Análisis' },
@@ -43,9 +44,7 @@ export default function PublicHeader() {
   return (
     <header className="py-6 sticky top-0 z-50 bg-background/80 backdrop-blur-sm">
       <nav className="container mx-auto px-6 flex justify-between items-center">
-        <a href="#" className="font-headline text-2xl font-bold text-white">
-          Cine Digital
-        </a>
+        <AnimatedLogo />
         <div className="hidden md:flex items-center space-x-8">
           <NavItems />
         </div>
