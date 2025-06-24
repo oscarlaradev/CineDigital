@@ -30,6 +30,12 @@ interface PostFormData {
   summary: string;
 }
 
+interface SocialLinks {
+    youtube: string;
+    twitter: string;
+    instagram: string;
+}
+
 const initialPostFormState: PostFormData = {
   title: '',
   category: 'analisis',
@@ -45,6 +51,12 @@ const initialPageContentState: PageSectionContent = {
     imageUrl: '',
 }
 
+const initialSocialLinksState: SocialLinks = {
+    youtube: '#',
+    twitter: '#',
+    instagram: '#'
+}
+
 export default function Dashboard() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [postFormData, setPostFormData] = useState<PostFormData>(initialPostFormState);
@@ -53,13 +65,14 @@ export default function Dashboard() {
   
   const [heroContent, setHeroContent] = useState<PageSectionContent>(initialPageContentState);
   const [aboutContent, setAboutContent] = useState<PageSectionContent>(initialPageContentState);
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>(initialSocialLinksState);
+
 
   const { toast } = useToast();
 
   useEffect(() => {
     if (!db) return;
     
-    // Posts listener
     const postsCollection = collection(db, 'posts');
     const q = query(postsCollection, orderBy('createdAt', 'desc'));
     const unsubscribePosts = onSnapshot(q, (snapshot) => {
@@ -67,16 +80,16 @@ export default function Dashboard() {
       setPosts(postsData);
     });
 
-    // Page content listeners
-    const fetchPageContent = async (sectionId: string, setter: React.Dispatch<React.SetStateAction<PageSectionContent>>) => {
+    const fetchPageContent = async (sectionId: string, setter: React.Dispatch<React.SetStateAction<any>>) => {
         const docRef = doc(db, 'pageContent', sectionId);
         const docSnap = await getDoc(docRef);
         if(docSnap.exists()) {
-            setter(docSnap.data() as PageSectionContent);
+            setter(docSnap.data());
         }
     }
     fetchPageContent('hero', setHeroContent);
     fetchPageContent('about', setAboutContent);
+    fetchPageContent('socials', setSocialLinks);
 
     return () => unsubscribePosts();
   }, []);
@@ -100,7 +113,12 @@ export default function Dashboard() {
     setAboutContent(prev => ({ ...prev, [id]: value }));
   }
 
-  const handlePageContentSave = async (sectionId: string, data: PageSectionContent) => {
+  const handleSocialLinksChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { id, value } = e.target;
+      setSocialLinks(prev => ({...prev, [id]: value}));
+  }
+
+  const handlePageContentSave = async (sectionId: string, data: any) => {
     if (!db) return;
     try {
         const docRef = doc(db, 'pageContent', sectionId);
@@ -193,7 +211,6 @@ export default function Dashboard() {
               <CardTitle>Gestionar Contenido de la Página</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-                {/* Hero Section Form */}
                 <form onSubmit={(e) => { e.preventDefault(); handlePageContentSave('hero', heroContent); }} className="space-y-4 p-4 border rounded-md">
                     <h3 className="font-semibold text-lg">Sección Hero</h3>
                     <div className="space-y-2">
@@ -207,7 +224,6 @@ export default function Dashboard() {
                     <Button type="submit">Guardar Sección Hero</Button>
                 </form>
 
-                {/* About Section Form */}
                 <form onSubmit={(e) => { e.preventDefault(); handlePageContentSave('about', aboutContent); }} className="space-y-4 p-4 border rounded-md">
                     <h3 className="font-semibold text-lg">Sección Sobre Mí</h3>
                     <div className="space-y-2">
@@ -223,6 +239,23 @@ export default function Dashboard() {
                         <Textarea id="content" rows={6} value={aboutContent.content} onChange={handleAboutContentChange} />
                     </div>
                     <Button type="submit">Guardar Sección Sobre Mí</Button>
+                </form>
+
+                <form onSubmit={(e) => { e.preventDefault(); handlePageContentSave('socials', socialLinks); }} className="space-y-4 p-4 border rounded-md">
+                    <h3 className="font-semibold text-lg">Enlaces de Redes Sociales</h3>
+                    <div className="space-y-2">
+                        <Label htmlFor="youtube">URL de YouTube</Label>
+                        <Input id="youtube" type="url" value={socialLinks.youtube} onChange={handleSocialLinksChange} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="twitter">URL de Twitter/X</Label>
+                        <Input id="twitter" type="url" value={socialLinks.twitter} onChange={handleSocialLinksChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="instagram">URL de Instagram</Label>
+                        <Input id="instagram" type="url" value={socialLinks.instagram} onChange={handleSocialLinksChange} />
+                    </div>
+                    <Button type="submit">Guardar Enlaces de Redes</Button>
                 </form>
             </CardContent>
           </Card>
