@@ -2,7 +2,7 @@ import React from 'react';
 
 const AnimatedLogo = () => {
   return (
-    <a href="#" className="animated-logo-container">
+    <a href="/" className="animated-logo-container">
       <svg viewBox="0 0 800 150">
         <text
           className="animated-logo-text-base"
