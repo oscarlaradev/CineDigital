@@ -30,12 +30,12 @@ export default function PublicHeader() {
           {link.label}
         </a>
       ))}
-      <a href="#newsletter" onClick={handleLinkClick}>
+      <a href="#contacto" onClick={handleLinkClick}>
         <Button
           variant="default"
           className="bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground font-medium"
         >
-          Suscríbete
+          Contacto
         </Button>
       </a>
     </>
